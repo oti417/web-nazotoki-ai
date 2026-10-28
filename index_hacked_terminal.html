@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HACK THE SYSTEM | 謎解き</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #20242b;
+      --muted: #68707d;
+      --line: #e1e5eb;
+      --accent: #334155;
+      --surface: #f6f7f9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 16px;
+      background: var(--surface);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+    main {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 28px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 8px 28px rgba(20, 30, 50, .05);
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(1.5rem, 4vw, 2rem); }
+    .intro, .muted { color: var(--muted); }
+    .topline {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; margin: 24px 0 10px; font-size: .9rem;
+    }
+    .track { height: 8px; background: #e9edf2; border-radius: 99px; overflow: hidden; }
+    .bar { height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
+    .question-card {
+      margin-top: 24px; padding: 22px;
+      border: 1px solid var(--line); border-radius: 14px;
+    }
+    .eyebrow { color: var(--muted); font-size: .85rem; margin: 0 0 8px; }
+    h2 { margin: 0 0 12px; font-size: 1.25rem; }
+    #questionText { white-space: pre-wrap; margin: 0 0 20px; }
+    label { display: block; margin-bottom: 7px; font-weight: 600; }
+    input {
+      width: 100%; padding: 13px 14px; font: inherit;
+      border: 1px solid #cbd2dc; border-radius: 9px;
+    }
+    input:focus { outline: 3px solid #dbeafe; border-color: #64748b; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    button {
+      border: 1px solid var(--accent); border-radius: 9px;
+      padding: 11px 16px; font: inherit; cursor: pointer;
+    }
+    .primary { color: #fff; background: var(--accent); }
+    .secondary { color: var(--accent); background: #fff; }
+    button:focus-visible { outline: 3px solid #bfdbfe; outline-offset: 2px; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    #feedback { min-height: 1.7em; margin: 14px 0 0; font-weight: 600; }
+    #hintBox {
+      margin-top: 14px; padding: 13px 14px; background: #f1f5f9;
+      border-radius: 9px;
+    }
+    [hidden] { display: none !important; }
+    .complete { text-align: center; padding: 34px 10px; }
+    .complete h2 { font-size: 1.7rem; }
+    @media (max-width: 480px) {
+      body { padding: 16px 10px; }
+      main { padding: 20px 16px; }
+      .question-card { padding: 17px; }
+      .actions button { flex: 1; }
+    }
+
+    :root {
+      color-scheme: dark;
+      --ink: #d9ffe0;
+      --muted: #71a978;
+      --line: #12621d;
+      --accent: #18ff35;
+      --surface: #020603;
+    }
+    body {
+      padding: 24px 14px;
+      background:
+        radial-gradient(ellipse at 50% 15%, rgba(0, 255, 30, .07), transparent 45%),
+        repeating-linear-gradient(0deg, rgba(0, 255, 50, .035) 0, rgba(0, 255, 50, .035) 1px, transparent 1px, transparent 4px),
+        #010301;
+      color: var(--ink);
+      font-family: Consolas, "Courier New", monospace, system-ui;
+    }
+    body::before {
+      content: "01001010 01001001  ACCESS_GRANTED  10100101  TRACE_HIDDEN  01010110  ";
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      color: #0b5a17;
+      opacity: .14;
+      font-size: 12px;
+      line-height: 1.8;
+      letter-spacing: 3px;
+      word-break: break-all;
+      z-index: 0;
+    }
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+      padding: clamp(18px, 4vw, 34px);
+      background: rgba(0, 5, 1, .97);
+      border: 1px solid #19e52e;
+      border-radius: 3px;
+      box-shadow: 0 0 0 1px rgba(24,255,53,.12), 0 0 28px rgba(24,255,53,.09), inset 0 0 34px rgba(24,255,53,.025);
+    }
+    h1 {
+      margin: 0;
+      color: #29ff43;
+      font-size: clamp(2rem, 7vw, 3.6rem);
+      line-height: 1.08;
+      letter-spacing: .035em;
+      text-shadow: 0 0 7px rgba(24,255,53,.7), 2px 0 #8bff00;
+      overflow-wrap: anywhere;
+    }
+    .glitch-mark { color: #ff3030; text-shadow: 2px 0 #ff3030; }
+    .intro {
+      margin: 8px 0 16px;
+      color: #22ff3c;
+      letter-spacing: .05em;
+      font-weight: 700;
+    }
+    .system-message {
+      padding: 12px 14px;
+      margin: 12px 0 18px;
+      border: 1px solid #157822;
+      color: #a9ffb2;
+      background: rgba(0, 255, 45, .035);
+    }
+    .system-message span, .prompt-mark { color: #2cff47; font-weight: 800; }
+    .status-strip {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      padding: 10px 0 18px;
+      color: #23ff3d;
+      font-size: .82rem;
+      border-bottom: 1px dashed #155d20;
+    }
+    .status-strip b { color: #ff3030; }
+    .status-dot {
+      display: inline-block;
+      width: 8px; height: 8px; margin-right: 6px;
+      border-radius: 50%;
+      background: #ff2525;
+      box-shadow: 0 0 9px #ff2525;
+    }
+    .topline {
+      margin: 20px 0 10px;
+      color: #2bff44;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      font-weight: 700;
+    }
+    .track {
+      height: 12px;
+      border: 1px solid #176d24;
+      border-radius: 0;
+      background: repeating-linear-gradient(135deg, #071009 0 5px, #0b1c0e 5px 10px);
+      overflow: hidden;
+    }
+    .bar {
+      background: linear-gradient(90deg, #0bd52a, #6aff32);
+      box-shadow: 0 0 14px rgba(24,255,53,.7);
+    }
+    .question-card {
+      margin-top: 24px;
+      padding: clamp(16px, 3vw, 24px);
+      border: 1px solid #147522;
+      border-radius: 2px;
+      background: linear-gradient(145deg, rgba(3, 13, 4, .98), rgba(0, 3, 1, .98));
+      box-shadow: inset 0 0 22px rgba(24,255,53,.025);
+    }
+    label {
+      color: #31ff48;
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      letter-spacing: .03em;
+    }
+    input {
+      width: 100%;
+      min-width: 0;
+      padding: 13px 14px;
+      font: inherit;
+      color: #d9ffe0;
+      background: #030904;
+      border: 1px solid #23552a;
+      border-radius: 2px;
+    }
+    input::placeholder { color: #56845c; }
+    input:focus {
+      outline: 2px solid rgba(24,255,53,.25);
+      border-color: #20ff3d;
+      box-shadow: 0 0 15px rgba(24,255,53,.12);
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    button {
+      border: 1px solid #20ff3d;
+      border-radius: 2px;
+      padding: 11px 16px;
+      font: inherit;
+      cursor: pointer;
+      transition: background .15s ease, box-shadow .15s ease;
+    }
+    .primary {
+      color: #031005;
+      background: #20ff3d;
+      font-weight: 800;
+      box-shadow: 0 0 10px rgba(24,255,53,.12);
+    }
+    .primary:hover:not(:disabled) {
+      background: #a5ffad;
+      box-shadow: 0 0 17px rgba(24,255,53,.3);
+    }
+    .secondary {
+      color: #2cff47;
+      background: #020702;
+    }
+    .secondary:hover:not(:disabled) {
+      background: rgba(24,255,53,.08);
+      box-shadow: 0 0 14px rgba(24,255,53,.16);
+    }
+    button:focus-visible { outline: 2px solid #ff3030; outline-offset: 3px; }
+    button:disabled { opacity: .42; cursor: not-allowed; }
+    #feedback { min-height: 1.7em; margin: 14px 0 0; color: #d7ffdd; font-weight: 700; }
+    #hintBox {
+      margin-top: 14px;
+      padding: 13px 14px;
+      color: #caffd0;
+      background: rgba(24,255,53,.035);
+      border: 1px solid #195b23;
+      border-left: 3px solid #20ff3d;
+      border-radius: 2px;
+      white-space: pre-line;
+    }
+    [hidden] { display: none !important; }
+    .complete { text-align: center; padding: 34px 10px; }
+    .complete h2 {
+      color: #28ff43;
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      text-shadow: 0 0 12px rgba(24,255,53,.6);
+    }
+    .terminal-footer {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 22px;
+      border: 1px solid #176d24;
+      background: rgba(0, 5, 1, .9);
+      color: #27ff41;
+    }
+    .terminal-footer > div { padding: 16px; min-width: 0; }
+    .terminal-footer > div + div { border-left: 1px solid #176d24; }
+    .terminal-footer strong { display: block; margin-bottom: 10px; }
+    .terminal-footer p { margin: 4px 0; font-size: .86rem; overflow-wrap: anywhere; }
+    .stay-hidden {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: clamp(1rem, 3vw, 1.7rem);
+      letter-spacing: .05em;
+      text-shadow: 0 0 8px #18ff35;
+      overflow-wrap: anywhere;
+    }
+    .stay-hidden span { color: #ff3030; }
+    .footer-note { color: #5c9a64; font-size: .78rem; margin-top: 14px; }
+    @media (max-width: 520px) {
+      body { padding: 12px 8px; }
+      main { padding: 18px 13px; }
+      .actions button { flex: 1 1 100%; }
+      .terminal-footer { grid-template-columns: 1fr; }
+      .terminal-footer > div + div { border-left: 0; border-top: 1px solid #176d24; min-height: 86px; }
+    }
+
+  </style>
+</head>
+<body>
+  <main>
+    <h1>YOU ARE HACKED<span class="glitch-mark">_</span></h1>
+    <p class="intro">UNAUTHORIZED ACCESS DETECTED</p><div class="system-message"><span>&gt;&gt;</span> 謎を解き、システムを復旧せよ。</div><div class="status-strip"><span><i class="status-dot"></i> SYSTEM STATUS: <b>COMPROMISED</b></span><span>ACCESS LOG // SESSION ACTIVE</span></div>
+
+    <section id="game">
+      <div class="topline">
+        <span id="progressLabel">PROBLEM 01 / 03</span>
+        <span id="percentLabel">0% COMPLETE</span>
+      </div>
+      <div class="track" role="progressbar" aria-label="クリア状況"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack">
+        <div class="bar" id="progressBar"></div>
+      </div>
+
+      <section class="question-card">
+        <form id="answerForm">
+          <label for="answerInput">ANSWER INPUT <span class="prompt-mark">&gt;_</span></label>
+          <input id="answerInput" name="answer" type="text"
+                 placeholder="ここに答えを入力" autocomplete="off" required>
+          <div class="actions">
+            <button class="primary" type="submit" id="submitButton">送信　 &gt;_</button>
+            <button class="secondary" type="button" id="hintButton">ヒント1を表示　›</button>
+          </div>
+        </form>
+
+        <p id="feedback" role="status" aria-live="polite"></p>
+        <div id="hintBox" hidden></div>
+        <div class="actions" id="nextActions" hidden>
+          <button class="primary" type="button" id="nextButton">回答を確定して次へ　 »</button>
+        </div>
+      </section>
+    </section>
+
+    <section id="completeScreen" class="complete" hidden>
+      <h2>SYSTEM RESTORED</h2>
+      <p>すべての謎が解除されました。システム復旧完了。</p>
+      <button class="primary" type="button" id="restartButton">再起動する</button>
+    </section>
+    <section class="terminal-footer" aria-label="システム情報">
+      <div><strong>TERMINAL</strong>
+        <p>&gt; localStorage : ACTIVATED</p>
+        <p>&gt; auto_save : ON</p>
+        <p>&gt; trace_status : HIDDEN</p>
+        <p>&gt; システムは操作を記録しています...</p>
+      </div>
+      <div class="stay-hidden">STAY UNDETECTED<span>_</span></div>
+    </section>
+    <p class="muted footer-note">※ 問題文は配布資料をご覧ください。 // CONNECTION SECURE</p>
+  </main>
+
+  <script>
+    // イベントごとに別の保存領域を使いたい場合は、EVENT_IDを変更してください。
+    const EVENT_ID = "nazotoki-event-2026";
+    const STORAGE_KEY = `${EVENT_ID}:progress`;
+
+    // 問題文は配布資料で確認してもらい、ここには答えとヒントだけを設定します。
+    const questions = [
+      {
+        answers: ["わいろ","賄賂","ワイロ"],
+        hints: [
+          "ヒント1：3つの漢字は右に寄っています。",
+          "ヒント2：3つの漢字の右に漢字が入りそうだ。",
+          "ヒント3：へんに魚を入れてみよう。"
+        ]
+      },
+      {
+        answers: ["イルカ"],
+        hints: [
+          "ヒント1：この三角形見たことがある気がする",
+          "ヒント2：この本のマークはどこを表しているんだ"
+        ]
+      },
+      {
+        answers: ["星", "ほし"],
+        hints: [
+          "ヒント1：夜空に見えるものです。",
+          "ヒント2：晴れた夜にたくさん見つかります。",
+          "ヒント3：「ほ〇」と読みます。"
+        ]
+      }
+    ];
+
+    function loadProgress() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return { currentIndex: 0, solved: [] };
+        const parsed = JSON.parse(saved);
+        const solved = Array.isArray(parsed.solved)
+          ? parsed.solved.filter(n => Number.isInteger(n) && n >= 0 && n < questions.length)
+          : [];
+        const uniqueSolved = [...new Set(solved)];
+        let index = Number.isInteger(parsed.currentIndex) ? parsed.currentIndex : 0;
+        index = Math.max(0, Math.min(index, questions.length));
+        while (index < questions.length && uniqueSolved.includes(index)) index++;
+        return { currentIndex: index, solved: uniqueSolved };
+      } catch {
+        return { currentIndex: 0, solved: [] };
+      }
+    }
+
+    let progress = loadProgress();
+    let currentIndex = progress.currentIndex;
+    let solvedQuestions = new Set(progress.solved);
+    let hintsShown = 0;
+    let solved = currentIndex < questions.length && solvedQuestions.has(currentIndex);
+
+    const $ = (id) => document.getElementById(id);
+    const form = $("answerForm");
+    const input = $("answerInput");
+
+    function saveProgress() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          currentIndex,
+          solved: [...solvedQuestions],
+          updatedAt: new Date().toISOString()
+        }));
+      } catch {
+        $("feedback").textContent =
+          "このブラウザでは進行状況を保存できません。通常モードで開いているか確認してください。";
+      }
+    }
+
+    // 全角英数字・空白・一部の句読点などの表記ゆれを吸収します。
+    function normalizeAnswer(value) {
+      return value
+        .normalize("NFKC")
+        .toLowerCase()
+        .replace(/[\s\u3000]/g, "")
+        .replace(/[。、，．,.!?！？「」『』"'“”]/g, "");
+    }
+
+    function updateProgress() {
+      const percent = Math.round((solvedQuestions.size / questions.length) * 100);
+      const shownIndex = Math.min(currentIndex + 1, questions.length);
+      $("progressLabel").textContent =
+        currentIndex >= questions.length
+          ? `ALL ${questions.length} PROBLEMS CLEARED`
+          : `PROBLEM ${String(shownIndex).padStart(2, "0")} / ${String(questions.length).padStart(2, "0")}`;
+      $("percentLabel").textContent = `${percent}% COMPLETE`;
+      $("progressBar").style.width = `${percent}%`;
+      $("progressTrack").setAttribute("aria-valuenow", String(percent));
+    }
+
+    function showComplete() {
+      $("game").hidden = true;
+      $("completeScreen").hidden = false;
+      $("progressBar").style.width = "100%";
+      $("progressTrack").setAttribute("aria-valuenow", "100");
+      $("percentLabel").textContent = "100% COMPLETE";
+      $("progressLabel").textContent = `ALL ${questions.length} PROBLEMS CLEARED`;
+    }
+
+    function renderQuestion() {
+      if (currentIndex >= questions.length) {
+        showComplete();
+        return;
+      }
+
+      const q = questions[currentIndex];
+      solved = solvedQuestions.has(currentIndex);
+      hintsShown = 0;
+      $("hintButton").textContent = "ヒント1を見る";
+
+      $("feedback").textContent = solved ? "この問題はクリア済みです。" : "";
+      $("hintBox").hidden = true;
+      $("hintBox").textContent = "";
+      $("hintButton").disabled = solved;
+      $("nextActions").hidden = !solved;
+      $("submitButton").disabled = solved;
+      input.disabled = solved;
+      input.value = "";
+      $("nextButton").textContent =
+        currentIndex === questions.length - 1 ? "クリア画面へ" : "次の問題へ";
+      updateProgress();
+      if (!solved) input.focus();
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (solved) return;
+
+      const guess = normalizeAnswer(input.value);
+      if (!guess) {
+        $("feedback").textContent = "答えを入力してください。";
+        return;
+      }
+
+      const accepted = questions[currentIndex].answers
+        .some(answer => normalizeAnswer(answer) === guess);
+
+      if (accepted) {
+        solved = true;
+        solvedQuestions.add(currentIndex);
+        saveProgress();
+        $("feedback").textContent = "正解！進行状況を保存しました。";
+        $("submitButton").disabled = true;
+        input.disabled = true;
+        $("hintButton").disabled = true;
+        $("nextActions").hidden = false;
+        $("nextButton").textContent =
+          currentIndex === questions.length - 1 ? "クリア画面へ" : "次の問題へ";
+        updateProgress();
+      } else {
+        $("feedback").textContent = "不正解です。もう一度考えてみよう！";
+      }
+    });
+
+    $("hintButton").addEventListener("click", () => {
+      const hints = questions[currentIndex].hints || [];
+      if (hintsShown >= hints.length) return;
+
+      $("hintBox").textContent = hints.slice(0, hintsShown + 1).join("\n");
+      $("hintBox").style.whiteSpace = "pre-line";
+      $("hintBox").hidden = false;
+      hintsShown++;
+
+      if (hintsShown < hints.length) {
+        $("hintButton").textContent = `ヒント${hintsShown + 1}を見る`;
+      } else {
+        $("hintButton").textContent = "ヒントは以上です";
+        $("hintButton").disabled = true;
+      }
+    });
+
+    $("nextButton").addEventListener("click", () => {
+      if (!solved) return;
+      currentIndex++;
+      saveProgress();
+      renderQuestion();
+    });
+
+    $("restartButton").addEventListener("click", () => {
+      // 「もう一度遊ぶ」はこの端末に保存された今回の進捗を消去します。
+      currentIndex = 0;
+      solvedQuestions = new Set();
+      solved = false;
+      try { localStorage.removeItem(STORAGE_KEY); } catch {}
+      $("completeScreen").hidden = true;
+      $("game").hidden = false;
+      renderQuestion();
+    });
+
+    // 全問クリア済みなら、再読み込み後もクリア画面を表示します。
+    if (currentIndex >= questions.length) {
+      showComplete();
+    } else {
+      renderQuestion();
+    }
+  </script>
+</body>
+</html>
